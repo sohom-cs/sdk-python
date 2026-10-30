@@ -111,7 +111,21 @@ class PydanticJSONPlainPayloadConverter(EncodingPayloadConverter):
         """
         data = (
             self._schema_serializer.to_json(
+<<<<<<< ours
+<<<<<<< ours
                 value, by_alias=True, exclude_unset=self._to_json_options.exclude_unset
+=======
+=======
+>>>>>>> theirs
+                value,
+                exclude_unset=self._to_json_options.exclude_unset,
+                # Validation reads aliases. Since pydantic 2.11 this serializer
+                # defaults to field names, unlike to_json.
+                by_alias=True,
+<<<<<<< ours
+>>>>>>> theirs
+=======
+>>>>>>> theirs
             )
             if self._to_json_options
             else to_json(value)

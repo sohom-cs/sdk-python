@@ -9,6 +9,7 @@ import uuid
 import pydantic
 import pytest
 from pydantic import BaseModel
+from pydantic.alias_generators import to_camel
 
 import temporalio.contrib.pydantic
 from temporalio.client import Client
@@ -132,6 +133,29 @@ async def test_pydantic_data_converter_pickle():
     restored = pickle.loads(pickle.dumps(pydantic_data_converter))
     value = {"a": 1}
     assert await restored.decode(await restored.encode([value]), [dict]) == [value]
+
+
+@pytest.mark.parametrize(
+    "to_json_options",
+    [
+        None,
+        temporalio.contrib.pydantic.ToJsonOptions(),
+        temporalio.contrib.pydantic.ToJsonOptions(exclude_unset=True),
+    ],
+)
+def test_aliased_fields_round_trip(
+    to_json_options: temporalio.contrib.pydantic.ToJsonOptions | None,
+):
+    class ToolCall(BaseModel):
+        model_config = pydantic.ConfigDict(alias_generator=to_camel)
+        tool_name: str
+        call_id: str = pydantic.Field(alias="id")
+
+    converter = PydanticPayloadConverter(to_json_options)
+    value = ToolCall.model_validate({"toolName": "search", "id": "call-1"})
+    payload = converter.to_payloads([value])[0]
+    assert payload.data == b'{"toolName":"search","id":"call-1"}'
+    assert converter.from_payloads([payload], [ToolCall]) == [value]
 
 
 @pytest.mark.parametrize(
